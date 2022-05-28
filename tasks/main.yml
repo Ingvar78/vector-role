@@ -17,35 +17,30 @@
       dest: ./vector-{{ vector_version }}-1.x86_64.rpm
       mode: 0755
   - name: Vector | Install vector rpm
-    become: true
     ansible.builtin.yum:
       name: vector-{{ vector_version }}-1.x86_64.rpm
       disable_gpg_check: true
   - name: Add vector user to systemd-journal group
-    become: true
     user:
       name: vector
       groups: systemd-journal
       append: true
   - name: Vector | Update vector config
-    become: true
     ansible.builtin.lineinfile:
-        path: /etc/default/vector
-        regexp: 'VECTOR_CONFIG='
-        line: VECTOR_CONFIG=/etc/vector/config.yaml
-    - name: Vector | Create vector config
-      become: true
-      ansible.builtin.copy:
-        dest: /etc/vector/config.yaml
-        content: |
-          {{ vector_config | to_nice_yaml(indent=2) }}
-    - name: Replace host ip
-      become: true
-      ansible.builtin.replace:
-        path: /etc/vector/config.yaml
-        regexp: 'endpoint: http://c8-clickhouse:8123'
-        replace: "endpoint: http://{{ hostvars[item].ansible_host }}:8123"
-        backup: true
-      when: hostvars[item].ansible_host is defined
-      with_items: "{{ groups.clickhouse }}"
-      notify: Start vector service
+      path: /etc/default/vector
+      regexp: 'VECTOR_CONFIG='
+      line: VECTOR_CONFIG=/etc/vector/config.yaml
+  - name: Vector | Create vector config
+    ansible.builtin.copy:
+      dest: /etc/vector/config.yaml
+      content: |
+        {{ vector_config | to_nice_yaml(indent=2) }}
+  - name: Replace host ip
+    ansible.builtin.replace:
+      path: /etc/vector/config.yaml
+      regexp: 'endpoint: http://c8-clickhouse:8123'
+      replace: "endpoint: http://{{ hostvars[item].ansible_host }}:8123"
+      backup: true
+    when: hostvars[item].ansible_host is defined
+    with_items: "{{ groups.clickhouse }}"
+    notify: Start vector service
