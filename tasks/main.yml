@@ -7,19 +7,36 @@
     lineinfile:
       dest: /etc/hosts
       regexp: '.*{{ item }}$'
-      line: "{{ hostvars[item].ansible_host }} {{item}}"
+      line: "{{ hostvars[item].ansible_host }} {{ item }}"
       state: present
     when: hostvars[item].ansible_host is defined
     with_items: "{{ groups.clickhouse }}"
-  - name: Vector | Get vector distrib
+# Install in CentOS
+  - name: Vector | Get vector distrib | CentOS
     ansible.builtin.get_url:
       url: https://packages.timber.io/vector/{{ vector_version }}/vector-{{ vector_version }}-1.x86_64.rpm
       dest: ./vector-{{ vector_version }}-1.x86_64.rpm
       mode: 0755
-  - name: Vector | Install vector rpm
+    when: ansible_facts.distribution == "CentOS"
+  - name: Vector | Install vector rpm | CentOS
     ansible.builtin.yum:
       name: vector-{{ vector_version }}-1.x86_64.rpm
       disable_gpg_check: true
+    when: ansible_facts.distribution == "CentOS"
+# Install in Ubuntu
+  - name: Get Vector distrib | Ubuntu
+    ansible.builtin.get_url:
+      url: "https://packages.timber.io/vector/{{ vector_version }}/vector-{{ vector_version }}-1_amd64.deb"
+      dest: "./vector-{{ vector_version }}-1_amd64.deb"
+      mode: 0755
+    when: ansible_facts.distribution == "Ubuntu"
+  - name: Install Vector packages | Ubuntu
+    become: true
+    ansible.builtin.apt:
+      deb: vector-{{ vector_version }}-1_amd64.deb
+    notify: Start Vector service
+    when: ansible_facts.distribution == "Ubuntu"
+# Config for all OS
   - name: Add vector user to systemd-journal group
     user:
       name: vector
@@ -33,6 +50,7 @@
   - name: Vector | Create vector config
     ansible.builtin.copy:
       dest: /etc/vector/config.yaml
+      mode: 0644
       content: |
         {{ vector_config | to_nice_yaml(indent=2) }}
   - name: Replace host ip
