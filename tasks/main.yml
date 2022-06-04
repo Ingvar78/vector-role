@@ -3,14 +3,6 @@
 - name: Install Vector
   become: true
   block:
-  - name: Vector | Add clickhouse addresses to /etc/hosts
-    lineinfile:
-      dest: /etc/hosts
-      regexp: '.*{{ item }}$'
-      line: "{{ hostvars[item].ansible_host }} {{ item }}"
-      state: present
-    when: hostvars[item].ansible_host is defined
-    with_items: "{{ groups.clickhouse }}"
 # Install in CentOS
   - name: Vector | Get vector distrib | CentOS
     ansible.builtin.get_url:
@@ -23,25 +15,45 @@
       name: vector-{{ vector_version }}-1.x86_64.rpm
       disable_gpg_check: true
     when: ansible_facts.distribution == "CentOS"
-# Install in Ubuntu
-  - name: Get Vector distrib | Ubuntu
-    ansible.builtin.get_url:
-      url: "https://packages.timber.io/vector/{{ vector_version }}/vector-{{ vector_version }}-1_amd64.deb"
-      dest: "./vector-{{ vector_version }}-1_amd64.deb"
-      mode: 0755
-    when: ansible_facts.distribution == "Ubuntu"
-  - name: Install Vector packages | Ubuntu
-    become: true
-    ansible.builtin.apt:
-      deb: vector-{{ vector_version }}-1_amd64.deb
-    notify: Start Vector service
-    when: ansible_facts.distribution == "Ubuntu"
-# Config for all OS
-  - name: Add vector user to systemd-journal group
+    notify: Start vector service | CentOS
+  - name: Add vector user to systemd-journal group | CentOS
     user:
       name: vector
       groups: systemd-journal
       append: true
+    when: ansible_facts.distribution == "CentOS"
+
+# Install in Ubuntu
+  - name: Get Vector distrib | Ubuntu
+    ansible.builtin.get_url:
+      url: "https://packages.timber.io/vector/{{ vector_version }}/vector_{{ vector_version }}-1_amd64.deb"
+      dest: "./vector_{{ vector_version }}-1_amd64.deb"
+      mode: 0755
+    when: ansible_facts.distribution == "Ubuntu"
+  - name: Create systemd unit Vector
+    become: true
+    template:
+      src: vector.service.j2
+      dest: /etc/systemd/system/vector.service
+      mode: 0644
+      owner: "{{ ansible_user_id }}"
+      group: "{{ ansible_user_gid }}"
+    when: ansible_facts.distribution == "Ubuntu"
+
+  - name: Install Vector packages | Ubuntu
+    become: true
+    ansible.builtin.apt:
+      deb: vector_{{ vector_version }}-1_amd64.deb
+    notify: Start Vector service | Ubuntu
+    when: ansible_facts.distribution == "Ubuntu"
+
+  - name: Add vector user to systemd-journal group | Ubuntu
+    user:
+      name: vector
+      groups: messagebus
+      append: true
+    when: ansible_facts.distribution == "Ubuntu"
+
   - name: Vector | Update vector config
     ansible.builtin.lineinfile:
       path: /etc/default/vector
@@ -53,12 +65,4 @@
       mode: 0644
       content: |
         {{ vector_config | to_nice_yaml(indent=2) }}
-  - name: Replace host ip
-    ansible.builtin.replace:
-      path: /etc/vector/config.yaml
-      regexp: 'endpoint: http://c8-clickhouse:8123'
-      replace: "endpoint: http://{{ hostvars[item].ansible_host }}:8123"
-      backup: true
-    when: hostvars[item].ansible_host is defined
-    with_items: "{{ groups.clickhouse }}"
-    notify: Start vector service
+

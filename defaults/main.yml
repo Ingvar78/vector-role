@@ -1,6 +1,9 @@
 ---
 # defaults file for vector-role
 vector_version: "0.21.1"
+clickhouse_host: 192.168.1.43
+clickhouse_user: testuser
+clickhouse_password: test
 vector_packages:
   - vector-server
 nginx_user: nginx

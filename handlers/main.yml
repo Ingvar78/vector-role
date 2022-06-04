@@ -1,7 +1,17 @@
 ---
 # handlers file for vector-role
-- name: Start vector service
+- name: Start vector service | CentOS
   become: true
   ansible.builtin.service:
     name: vector
     state: restarted
+  when: ansible_virtualization_type != 'docker'
+#  when: ansible_facts.distribution == "CentOS"
+
+- name: Start Vector service | Ubuntu
+  become: true
+  ansible.builtin.systemd:
+    name: vector
+    state: restarted
+  when: ansible_virtualization_type != 'docker'
+#  when: ansible_facts.distribution == "Ubuntu"

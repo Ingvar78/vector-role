@@ -4,6 +4,8 @@
 - name: Verify
   hosts: all
   gather_facts: false
+  vars:
+    vector_config_path: /etc/vector/config.yaml
   tasks:
   - name: Example assertion
     assert:
@@ -24,3 +26,4 @@
   - name: Assert Vector validate config
     assert:
       that: "'{{ vector_validate.rc }}' == '0'"
+
