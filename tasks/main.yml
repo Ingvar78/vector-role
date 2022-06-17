@@ -65,4 +65,3 @@
       mode: 0644
       content: |
         {{ vector_config | to_nice_yaml(indent=2) }}
-
