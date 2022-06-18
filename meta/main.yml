@@ -1,8 +1,9 @@
 galaxy_info:
-  role_name: vector
+  role_name: vector-role
   author: Igor V
   description: Role for installation and managing Vector 0.21.1 HW 8.4 Centos 8
   company: HW
+  namespace: test
 
 
   # If the issue tracker for your role is not on github, uncomment the
