@@ -13,8 +13,6 @@ verifier:
   name: ansible
 scenario:
   test_sequence:
-    - destroy
-    - converge
     - idempotence
     - verify
     - destroy
