@@ -1,5 +1,5 @@
 galaxy_info:
-  role_name: vector-role
+  role_name: vector
   author: Igor V
   description: Role for installation and managing Vector 0.21.1 HW 8.4 Centos 8
   company: HW
